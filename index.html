@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Whack-an-Animal!</title>
+    <style>
+        /* CSS - The Look */
+        :root {
+            --grass-color: #a8e6cf;
+            --dirt-color: #795548;
+            --border-color: #5d4037;
+        }
+
+        body {
+            text-align: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--grass-color);
+            margin: 0;
+            padding: 20px;
+            touch-action: manipulation; /* Stops iPad zoom-on-tap */
+            user-select: none; /* Stops text highlighting while playing */
+        }
+
+        h1 { color: #2d5a27; margin-bottom: 10px; }
+
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 10px;
+        }
+
+        .hole {
+            aspect-ratio: 1 / 1;
+            background: var(--dirt-color);
+            border-radius: 50%;
+            border: 8px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 10px 0 rgba(0,0,0,0.2);
+        }
+
+        /* The Animal */
+        .animal {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            bottom: -100%; /* Start hidden */
+            left: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px; /* Big emoji for iPad */
+            transition: bottom 0.1s ease;
+            cursor: pointer;
+        }
+
+        .animal.up {
+            bottom: 0%; /* Pop up! */
+        }
+
+        #start-btn {
+            margin-top: 30px;
+            padding: 15px 40px;
+            font-size: 24px;
+            background-color: #2ea44f;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px #1a6330;
+        }
+
+        #start-btn:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Score: <span id="score">0</span> | Time: <span id="timer">30</span>s</h1>
+
+    <div class="game-grid">
+        <div class="hole"><div class="animal" id="a0">🐹</div></div>
+        <div class="hole"><div class="animal" id="a1">🐰</div></div>
+        <div class="hole"><div class="animal" id="a2">🐻</div></div>
+        <div class="hole"><div class="animal" id="a3">🐱</div></div>
+        <div class="hole"><div class="animal" id="a4">🐶</div></div>
+        <div class="hole"><div class="animal" id="a5">🦊</div></div>
+        <div class="hole"><div class="animal" id="a6">🐨</div></div>
+        <div class="hole"><div class="animal" id="a7">🦁</div></div>
+        <div class="hole"><div class="animal" id="a8">🐼</div></div>
+    </div>
+
+    <button id="start-btn">START GAME</button>
+
+    <script>
+        // JavaScript - The Logic
+        const animals = document.querySelectorAll('.animal');
+        const scoreDisplay = document.querySelector('#score');
+        const timerDisplay = document.querySelector('#timer');
+        const startBtn = document.querySelector('#start-btn');
+
+        let score = 0;
+        let lastAnimal;
+        let timeUp = false;
+        let gameTimer = 30;
+        let countdown;
+
+        function randomTime(min, max) {
+            return Math.round(Math.random() * (max - min) + min);
+        }
+
+        function randomAnimal(animals) {
+            const idx = Math.floor(Math.random() * animals.length);
+            const animal = animals[idx];
+            if (animal === lastAnimal) return randomAnimal(animals);
+            lastAnimal = animal;
+            return animal;
+        }
+
+        function popUp() {
+            const time = randomTime(500, 1000); // Speed: between 0.5 and 1 second
+            const animal = randomAnimal(animals);
+            animal.classList.add('up');
+            
+            setTimeout(() => {
+                animal.classList.remove('up');
+                if (!timeUp) popUp();
+            }, time);
+        }
+
+        function whack(e) {
+            // Check if the animal is currently "up"
+            if(!this.classList.contains('up')) return;
+            
+            score++;
+            this.classList.remove('up'); // Make it disappear instantly when hit
+            scoreDisplay.textContent = score;
+        }
+
+        // Add both touch and click listeners for iPad/PC compatibility
+        animals.forEach(animal => {
+            animal.addEventListener('touchstart', (e) => {
+                e.preventDefault(); // Prevents double-firing with click
+                whack.call(animal);
+            });
+            animal.addEventListener('mousedown', whack);
+        });
+
+        startBtn.addEventListener('click', () => {
+            // Reset everything
+            score = 0;
+            gameTimer = 30;
+            timeUp = false;
+            scoreDisplay.textContent = 0;
+            timerDisplay.textContent = 30;
+            startBtn.style.display = 'none'; // Hide button during game
+
+            popUp();
+            
+            countdown = setInterval(() => {
+                gameTimer--;
+                timerDisplay.textContent = gameTimer;
+                if(gameTimer <= 0) {
+                    clearInterval(countdown);
+                    timeUp = true;
+                    startBtn.style.display = 'inline-block';
+                    startBtn.innerText = 'PLAY AGAIN';
+                    alert('Game Over! You whacked ' + score + ' animals!');
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
